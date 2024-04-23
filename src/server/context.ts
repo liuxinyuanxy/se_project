@@ -1,20 +1,22 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type * as trpcNext from '@trpc/server/adapters/next';
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+import { JWTUser } from 'server/routers/user';
+import { verify } from 'jsonwebtoken';
 interface CreateContextOptions {
-  // session: Session | null
+  token: string,
 }
 
 /**
  * Inner function for `createContext` where we create the context.
  * This is useful for testing when we don't want to mock Next.js' request/response
  */
-export async function createContextInner(_opts: CreateContextOptions) {
-  return {};
+export function createContextInner(_opts: CreateContextOptions) : JWTUser {
+  try {
+    return verify(_opts.token, process.env.JWT_SECRET_KEY ?? '') as JWTUser
+  } catch (error) {
+    return {role: 'guest', user: null};
+  }
 }
-
-export type Context = Awaited<ReturnType<typeof createContextInner>>;
 
 /**
  * Creates context for an incoming request
@@ -22,8 +24,14 @@ export type Context = Awaited<ReturnType<typeof createContextInner>>;
  */
 export async function createContext(
   opts: trpcNext.CreateNextContextOptions,
-): Promise<Context> {
+) {
   // for API-response caching see https://trpc.io/docs/v11/caching
 
-  return await createContextInner({});
+  return { ... createContextInner({token: opts.req.cookies.token ?? ''}),
+    setCookie: (name: string, value: string) => {
+      opts.res.setHeader('Set-Cookie', `${name}=${value}; Path=/; HttpOnly; SameSite=Strict; Secure;`)
+    }
+  }
 }
+
+export type Context = Awaited<ReturnType<typeof createContext>>;

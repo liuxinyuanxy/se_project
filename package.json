@@ -26,10 +26,12 @@
     "@types/jest": "^25.2.3",
     "@types/react-dom": "^18.0.6",
     "apexcharts": "^3.35.2",
+    "bcryptjs": "^2.4.3",
     "clsx": "^2.0.0",
     "drizzle-orm": "^0.30.8",
     "drizzle-zod": "^0.5.1",
     "framer-motion": "^4.1.17",
+    "jsonwebtoken": "^9.0.2",
     "next": "^14.1.4",
     "react": "^18.2.0",
     "react-apexcharts": "^1.4.0",
@@ -73,6 +75,8 @@
     ]
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.33",
     "@types/react-calendar": "^3.5.2",

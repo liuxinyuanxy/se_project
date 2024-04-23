@@ -8,9 +8,10 @@
  * @link https://trpc.io/docs/v11/procedures
  */
 
-import { initTRPC } from '@trpc/server';
+import {initTRPC, TRPCError} from '@trpc/server';
 import { transformer } from 'utils/transformer';
 import type { Context } from './context';
+import {Doctor, Patient} from "./routers/user";
 
 const t = initTRPC.context<Context>().create({
   /**
@@ -48,3 +49,58 @@ export const mergeRouters = t.mergeRouters;
  * @link https://trpc.io/docs/v11/server/server-side-calls
  */
 export const createCallerFactory = t.createCallerFactory;
+
+export const middleware = t.middleware;
+
+const isAuthed = middleware(({ next, ctx }) => {
+    const user = ctx.user;
+
+    if (!user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Please log in' });
+    }
+
+    return next({
+        ctx
+    });
+});
+
+const isPatient = middleware(({ next, ctx }) => {
+    if (ctx.role !== 'patient') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not authorized to access this resource' });
+    }
+
+    return next({
+        ctx: {
+            ...ctx,
+            user: ctx.user as Patient,
+        }
+    });
+});
+
+const isDoctor = middleware(({ next, ctx }) => {
+    if (ctx.role !== 'doctor') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not authorized to access this resource' });
+    }
+
+    return next({
+        ctx: {
+            ...ctx,
+            user: ctx.user as Doctor,
+        }
+    });
+});
+
+const isAdmin = middleware(({ next, ctx }) => {
+    if (ctx.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not authorized to access this resource' });
+    }
+
+    return next({
+        ctx
+    });
+});
+
+export const authedProcedure = publicProcedure.use(isAuthed);
+export const patientProcedure = authedProcedure.use(isPatient);
+export const doctorProcedure = authedProcedure.use(isDoctor);
+export const adminProcedure = authedProcedure.use(isAdmin);
